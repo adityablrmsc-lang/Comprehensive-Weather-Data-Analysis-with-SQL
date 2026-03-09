@@ -1,0 +1,110 @@
+-- Create the database
+CREATE DATABASE WeatherDB;
+USE WeatherDB;
+
+-- Create the Cities table
+CREATE TABLE cities (
+    id INT AUTO_INCREMENT,
+    city_name VARCHAR(100),
+    region VARCHAR(100),
+    country VARCHAR(100),
+    PRIMARY KEY (id)
+);
+
+-- Create the Weather table
+CREATE TABLE weather (
+    id INT AUTO_INCREMENT,
+    city_id INT,
+    date DATE,
+    temperature DECIMAL(5, 2),
+    humidity INT,
+    precipitation DECIMAL(5, 2),
+    wind_speed DECIMAL(5, 2),
+    PRIMARY KEY (id),
+    FOREIGN KEY (city_id) REFERENCES cities(id)
+);
+
+-- Insert sample data into Cities
+INSERT INTO cities (city_name, region, country) VALUES
+('New York', 'East Coast', 'USA'),
+('Los Angeles', 'West Coast', 'USA'),
+('London', 'England', 'UK'),
+('Mumbai', 'Maharashtra', 'India');
+
+-- Insert sample data into Weather
+INSERT INTO weather (city_id, date, temperature, humidity, precipitation, wind_speed) VALUES
+(1, '2024-11-01', 15.5, 80, 10.2, 5.5),
+(1, '2024-11-02', 14.8, 85, 5.3, 6.2),
+(2, '2024-11-01', 22.0, 60, 0.0, 3.5),
+(3, '2024-11-01', 10.0, 90, 2.5, 4.0),
+(4, '2024-11-01', 30.0, 70, 0.0, 7.5),
+(4, '2024-11-02', 29.5, 72, 0.0, 6.8);
+
+-- Query: Average Temperature by Month
+SELECT 
+    MONTH(date) AS month,
+    AVG(temperature) AS avg_temperature
+FROM weather
+GROUP BY MONTH(date);
+
+-- Query: Average Humidity by Region
+SELECT 
+    c.region,
+    AVG(w.humidity) AS avg_humidity
+FROM weather w
+INNER JOIN cities c ON w.city_id = c.id
+GROUP BY c.region;
+
+-- Query: Days with High Precipitation
+SELECT 
+    c.city_name,
+    w.date,
+    w.precipitation
+FROM weather w
+INNER JOIN cities c ON w.city_id = c.id
+WHERE w.precipitation > 10.0
+ORDER BY w.precipitation DESC;
+
+-- Query: Cities with High Wind Speeds
+SELECT 
+    c.city_name,
+    AVG(w.wind_speed) AS avg_wind_speed
+FROM weather w
+INNER JOIN cities c ON w.city_id = c.id
+GROUP BY c.city_name
+HAVING AVG(w.wind_speed) > 5.0;
+
+-- Query: Daily Temperature for a City
+SELECT 
+    date, 
+    temperature 
+FROM weather
+WHERE city_id = 4
+ORDER BY date;
+
+-- Query: Total Precipitation by City
+SELECT 
+    c.city_name,
+    SUM(w.precipitation) AS total_precipitation
+FROM weather w
+INNER JOIN cities c ON w.city_id = c.id
+GROUP BY c.city_name
+ORDER BY total_precipitation DESC;
+
+-- Create a View for Monthly Averages
+CREATE VIEW monthly_weather AS
+SELECT 
+    c.city_name,
+    MONTH(w.date) AS month,
+    AVG(w.temperature) AS avg_temperature,
+    AVG(w.humidity) AS avg_humidity
+FROM weather w
+INNER JOIN cities c ON w.city_id = c.id
+GROUP BY c.city_name, MONTH(w.date);
+
+-- Use the View for Analysis
+SELECT * FROM monthly_weather WHERE city_name = 'Mumbai';
+
+-- Optimize: Create Indexes
+CREATE INDEX idx_date ON weather(date);
+CREATE INDEX idx_city_id ON weather(city_id);
